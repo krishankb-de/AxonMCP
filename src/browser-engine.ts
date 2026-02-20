@@ -149,13 +149,58 @@ export class BrowserEngine {
   }
 
   /**
-   * Click an element by its semantic ID (we locate it by its accessible name/role
-   * using a data attribute we inject, or by building a selector from the semantic map).
+   * Click an element by CSS selector (e.g. [data-semantic-id='N']).
    */
   async clickElement(selector: string): Promise<void> {
     const page = this.getPage();
     await page.click(selector, { timeout: 5000 });
     await page.waitForTimeout(800);
+  }
+
+  /**
+   * Click the first visible element whose accessible name (or text content)
+   * contains the given text substring (case-insensitive). Used as a fallback
+   * when the selector-map lookup fails.
+   */
+  async clickByText(text: string): Promise<boolean> {
+    const page = this.getPage();
+    const lower = text.toLowerCase();
+
+    // Try role=link first, then role=button, then generic text match
+    const candidates = [
+      page.getByRole("link", { name: new RegExp(lower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }),
+      page.getByRole("button", { name: new RegExp(lower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }),
+    ];
+
+    for (const locator of candidates) {
+      try {
+        const count = await locator.count();
+        if (count > 0) {
+          await locator.first().click({ timeout: 5000 });
+          await page.waitForTimeout(800);
+          return true;
+        }
+      } catch {
+        // try next
+      }
+    }
+
+    // Last resort: find by partial text content via evaluate
+    const clicked = await page.evaluate((searchText: string) => {
+      const all = Array.from(document.querySelectorAll("a, button, [role='link'], [role='button']"));
+      const target = all.find(el => {
+        const label = (el.getAttribute("aria-label") || el.textContent || "").toLowerCase();
+        return label.includes(searchText.toLowerCase());
+      }) as HTMLElement | undefined;
+      if (target) { target.click(); return true; }
+      return false;
+    }, text);
+
+    if (clicked) {
+      await page.waitForTimeout(800);
+      return true;
+    }
+    return false;
   }
 
   /**
