@@ -1,0 +1,27 @@
+{
+  "name": "semantic-dom-filter-mcp",
+  "version": "1.0.0",
+  "description": "A Semantic DOM Filter MCP server that acts as a high-pass filter between chaotic web pages and clean LLM context windows.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "semantic-dom-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch",
+    "prepare": "npx playwright install chromium"
+  },
+  "keywords": ["mcp", "browser", "semantic", "dom", "llm", "playwright"],
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "playwright": "^1.52.0",
+    "cheerio": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "typescript": "^5.8.0"
+  }
+}
